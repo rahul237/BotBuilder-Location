@@ -1,10 +1,19 @@
+// This loads the environment variables from the .env file
 require('dotenv-extended').load();
 
+var publicConfig = {
+  key: 'AIzaSyDyfo8AcLlsScphAz8kC4MnPFllER4yqSI',
+  stagger_time:       1000, // for elevationPath
+  encode_polylines:   false,
+  secure:             true, // use https
+  proxy:              'http://127.0.0.1:9999' // optional, set a proxy for HTTP requests
+};
+
+var GoogleMapsAPI=require('googlemaps');
+var gmAPI = new GoogleMapsAPI(publicConfig);
 var builder = require('botbuilder');
 var restify = require('restify');
 var locationDialog = require('botbuilder-location');
-
-
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -26,7 +35,7 @@ bot.dialog("/", [
         var options = {
             prompt: "Where should I ship your order?",
             useNativeControl: true,
-            reverseGeocode: true,
+            reverseGeocode: false,
 			skipFavorites: false,
 			skipConfirmationAsk: true,
             requiredFields:
@@ -41,12 +50,23 @@ bot.dialog("/", [
     },
     function (session, results) {
         if (results.response) {
-            var place = results.response;
-            fAddress=getFormattedAddressFromPlace(place, ", ");
-			var formattedAddress = 
-            session.send("Thanks, I will ship to " +fAddress );
-            console.log(fAddress);
 
+
+            var place = results.response;
+
+            var geocodeParams = {
+  "address":    getFormattedAddressFromPlace(place, ", "),
+  "components": "components=country:GB",
+  "bounds":     "55,-1|54,1",
+  "language":   "en",
+  "region":     "uk"
+};
+ 
+gmAPI.geocode(geocodeParams, function(err, result){
+  console.log(result);
+});
+			var formattedAddress = 
+            session.send("Thanks, I will ship to " + getFormattedAddressFromPlace(place, ", "));
         }
     }
 ]);
